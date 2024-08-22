@@ -1,6 +1,6 @@
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
-from tnt_colours import Colours
+from helpers import Colours, Text_Helper
 
 class Player:
     def __init__(self, player_name, category_rank, number_of_stats, team_colour):
@@ -15,7 +15,7 @@ class Player:
 def read_csv(path):
     """
     This function will read a csv using the provided path, and return the relevant data 
-    The csv is expected to take the format, where the first line has 2 entries:
+    The csv is expected to take the folllowing format, where the first line has 2 entries:
     statistic title,path to image - e.g "Winners","img/img04.png"
     The next 5 lines contain entries for each player in this format:
     player_name,ranking,number_of_stats,team_colour
@@ -44,18 +44,6 @@ def read_csv(path):
 
     return stat_title, img_path, players 
 
-def get_colour_code(team_colour, colour_dict):
-    """
-    A function that takes a team colour as string, e.g 'Pink' and returns the colour for that team
-    """
-    if team_colour not in colour_dict:
-        print(f"Maybe an issue: colour {team_colour} not in the dictionary. \nDefaulting to black")
-
-    return colour_dict.get(team_colour, (0, 0, 0))  # Default to black if colour not found
-   
-
-
-
 
 def draw_data_from_scratch(stat_title, img_path, players):
     # Create a blank image with white background
@@ -64,42 +52,71 @@ def draw_data_from_scratch(stat_title, img_path, players):
     background_color = (255, 255, 255)
     template = Image.new('RGB', (image_width, image_height), background_color)
     draw = ImageDraw.Draw(template)
-
-    left_half_width = image_width // 2
-    green_color = get_colour_code('Green', colours.tnt_colour_codes)
-    draw.rectangle([0, 0, left_half_width, image_height], fill=green_color)
-
-    # Set font (you need to provide the path to your font file)
+    text_helper = Text_Helper(draw)
+    
+    half_width = image_width // 2
+    green_color = colours.tnt_colours['Green']
+    draw.rectangle([0, 0, half_width, image_height], fill=green_color)
+    blue_box_height = image_height //8
+    draw.rectangle([0, 0, half_width, blue_box_height], fill=colours.tnt_colours['Blue'])
+    # Set fonts
     font_path = "util/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf"  # Adjust this path
-    title_font = ImageFont.truetype(font_path, size=60)
+    title_font = ImageFont.truetype(font_path, size=110)
     text_font = ImageFont.truetype(font_path, size=45)
 
     # Draw the statistic title at the top
-    draw.text((50, 30), stat_title, fill="black", font=title_font)
 
+    _, _, w, h = draw.textbbox((0, 0), stat_title, font=title_font)
+    text_helper.draw_centered_text(stat_title, title_font,(half_width / 2, blue_box_height / 2 + blue_box_height), fill=colours.tnt_colours['Black'])
     # Load the image to be used for the players
     player_image = Image.open(img_path)
     player_image = player_image.resize((200, 200))  # Resize to fit the layout
 
-    # Define the starting position for player data
-    start_x = 50
-    start_y = 150
-    y_offset = 150  # Spacing between players
 
     # Draw each player's information
-    for player in players:
-        # Set text color based on the player's team color
-        color = get_colour_code(player.team_colour, colours.team_colour_codes_dark)
 
-        # Draw player name, rank, and number of stats
-        draw.text((start_x, start_y), f"{player.category_rank}. {player.player_name}", fill=color, font=text_font)
-        draw.text((start_x + 400, start_y), f"{player.number_of_stats}", fill=color, font=text_font)
+    table_heights = (blue_box_height * 2, image_height - blue_box_height)
+    table_padding = 75
+    table_widths = (table_padding, half_width - table_padding) 
+    table_row_height = (table_heights[1] - table_heights[0]) // len(players)
+    max_stat_value = max(int(player.number_of_stats) for player in players)
+    if 0 <= max_stat_value <= 9:
+        stat_box_width = 50
+    elif 10 <= max_stat_value <= 99:
+        stat_box_width = 100  
+    else:
+        print(f"There's a maximum {stat_title} of {max_stat_value}, which may pose a formatting issue.")
+        stat_box_width = 150   
+
+    for idx, player in enumerate(players):
+        #Get team colours
+        text_colour = colours.team_colour_codes_dark[player.team_colour]
+        bg_colour = colours.team_colour_codes_light[player.team_colour]
+        bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.8)
+        #Draw circle on left edge
+        draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = bg_colour)
+        #Add rectangle from midpoint of circle to end of table
+        draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour)
+        #Draw darkened column on right side of table - for stats to go in
+        draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
         
-        # Place the player image to the right of the text
-        template.paste(player_image, (800, start_y - 30))  # Adjust the position to fit the layout
+        #Draw stat count in darkened rectangle
+        text_helper.draw_centered_text(str(player.number_of_stats), title_font, (half_width - table_padding - stat_box_width // 2,table_heights[0] + (idx+0.5)*table_row_height), fill=text_colour)
+
+
+        #Write number (rank) in middle of circle
+        rank_middle = (table_padding + table_row_height * 0.5, table_heights[0] + (idx + 0.5) * table_row_height)
+        # Use the draw_centered_text function to draw the rank number centered
         
-        # Move to the next line
-        start_y += y_offset
+        text_helper.draw_centered_text(str(player.category_rank), title_font, rank_middle, fill=text_colour)
+        
+        #Write player name
+        #Player name can basically fit within the bounds of xcoords: padding*2 -> table_widths[0] - stat_box_width
+        first_name, last_name = text_helper.split_name(str(player.player_name))
+        player_name_bounds = (table_padding*2+10,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
+        first_name_last_diff = 50
+        text_helper.draw_left_text(first_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2), fill=colours.tnt_colours['White'])
+        text_helper.draw_left_text(last_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2), fill=colours.tnt_colours['White'])
 
     # Save the final image
     template.save("output_image.png")
