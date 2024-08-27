@@ -100,7 +100,7 @@ def draw_data_from_scratch(stat_title, img_path, players):
         #Get team colours
         text_colour = colours.team_colour_codes_dark[player.team_colour]
         bg_colour = colours.adjust_color_brightness(colours.team_colour_codes_light[player.team_colour],0.9)
-        bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.8)
+        bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.6)
         #Draw circle on left edge
         draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = bg_colour)
         #Add rectangle from midpoint of circle to end of table
@@ -124,7 +124,6 @@ def draw_data_from_scratch(stat_title, img_path, players):
         player_name_bounds = (table_padding*2,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
         first_name_last_diff = 52
         name_offset = 36
-        print(player_name_bounds)
         text_helper.draw_text(first_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
         text_helper.draw_text(last_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
 
@@ -132,9 +131,15 @@ def draw_data_from_scratch(stat_title, img_path, players):
 
     #Add player image
     player_image = Image.open(img_path)
-    player_image = player_image.resize((600, 1200))  # Resize to fit the layout
-
+    player_image = player_image.resize((600, 1200))
     template.paste(player_image, (half_width, 0))
+    
+
+    #Add TNT logo
+    logo_size = 270
+    tnt_logo = Image.open("imgs/logo-white.png").resize((logo_size,int(logo_size / 1.35)))
+    template.paste(tnt_logo, (image_width - logo_size + 35, 35), tnt_logo)
+
     template.save("output_image.png")
 
 if __name__ == "__main__":
