@@ -63,14 +63,15 @@ def draw_data_from_scratch(stat_title, img_path, players):
     # Set fonts
     font_path = "util/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf"
     anton_path = "util/fonts/Anton/Anton-Regular.ttf"
-    
+    oswald_path = "util/fonts/Oswald/Oswald-VariableFont_wght.ttf"
     #Draw caption in blue box
     blue_box_caption = "S3 Regular Season Leaders"
-    max_blue_box_text_size = text_helper.get_max_text_size(ImageFont, blue_box_caption, (half_width - 50, blue_box_height), font_path)
-    text_helper.draw_centered_text(blue_box_caption, ImageFont.truetype(font_path, size=max_blue_box_text_size), (half_width/2, blue_box_height/2), fill=colours.tnt_colours['White'])
+    max_blue_box_text_size = text_helper.get_max_text_size(ImageFont, blue_box_caption, (half_width - 50, blue_box_height), oswald_path)
+    text_helper.draw_centered_text(blue_box_caption, ImageFont.truetype(oswald_path, size=max_blue_box_text_size), (half_width/2, blue_box_height/2), fill=colours.tnt_colours['White'])
 
     title_font = ImageFont.truetype(font_path, size=110)
     text_font = ImageFont.truetype(font_path, size=45)
+    oswald_font = ImageFont.truetype(oswald_path, size=58)
 
     # Draw the statistic title at the top
     max_title_size = text_helper.get_max_text_size(ImageFont, stat_title, (half_width - 50, blue_box_height), anton_path)
@@ -82,18 +83,18 @@ def draw_data_from_scratch(stat_title, img_path, players):
 
     # Draw each player's information
 
-    table_heights = (blue_box_height * 2, image_height - blue_box_height)
+    table_heights = (blue_box_height * 2, image_height - blue_box_height/2)
     table_padding = 75
     table_widths = (table_padding, half_width - table_padding) 
     table_row_height = (table_heights[1] - table_heights[0]) // len(players)
     max_stat_value = max(int(player.number_of_stats) for player in players)
     if 0 <= max_stat_value <= 9:
-        stat_box_width = 50
+        stat_box_width = 55
     elif 10 <= max_stat_value <= 99:
-        stat_box_width = 100  
+        stat_box_width = 105  
     else:
         print(f"There's a maximum {stat_title} of {max_stat_value}, which may pose a formatting issue.")
-        stat_box_width = 150   
+        stat_box_width = 155  
 
     for idx, player in enumerate(players):
         #Get team colours
@@ -105,14 +106,14 @@ def draw_data_from_scratch(stat_title, img_path, players):
         #Add rectangle from midpoint of circle to end of table
         draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour)
         #Draw darkened column on right side of table - for stats to go in
-        #draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
+        draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
         
         #Draw stat count in darkened rectangle
         text_helper.draw_centered_text(str(player.number_of_stats), title_font, (half_width - table_padding - stat_box_width // 2,table_heights[0] + (idx+0.5)*table_row_height), fill='White')
 
 
         #Write number (rank) in middle of circle
-        rank_middle = (table_padding + table_row_height * 0.5, table_heights[0] + (idx + 0.5) * table_row_height)
+        rank_middle = (table_padding + table_row_height * 0.5 - 5, table_heights[0] + (idx + 0.5) * table_row_height- 2)
         # Use the draw_centered_text function to draw the rank number centered
         
         text_helper.draw_centered_text(str(player.category_rank), title_font, rank_middle, fill=text_colour)
@@ -121,13 +122,19 @@ def draw_data_from_scratch(stat_title, img_path, players):
         #Player name can basically fit within the bounds of xcoords: padding*2 -> table_widths[0] - stat_box_width
         first_name, last_name = text_helper.split_name(str(player.player_name))
         player_name_bounds = (table_padding*2,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
-        first_name_last_diff = 47
-        name_offset = 27
+        first_name_last_diff = 52
+        name_offset = 36
         print(player_name_bounds)
-        text_helper.draw_text(first_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
-        text_helper.draw_text(last_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+        text_helper.draw_text(first_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+        text_helper.draw_text(last_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
 
     # Save the final image
+
+    #Add player image
+    player_image = Image.open(img_path)
+    player_image = player_image.resize((600, 1200))  # Resize to fit the layout
+
+    template.paste(player_image, (half_width, 0))
     template.save("output_image.png")
 
 if __name__ == "__main__":

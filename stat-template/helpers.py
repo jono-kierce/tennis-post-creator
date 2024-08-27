@@ -23,9 +23,9 @@ class Colours():
         'Pink': (0xea, 0xa3, 0xf0),
         'Navy': (0x48, 0x84, 0xd5),
         'Light Blue': (0x85, 0xbf, 0xe0),
-        'Green': (0x82, 0xf9, 0x82),
-        'White': (0xa6, 0xa6, 0xa6),
-        'Black': (0x73, 0x73, 0x73),
+        'Green': (0x7c, 0xf2, 0x7c),
+        'White': (0xb0, 0xb0, 0xb0),
+        'Black': (0x6a, 0x6a, 0x6a),
         'Red': (0xee, 0x74, 0x74),
         'Orange': (0xff, 0xa1, 0x67),
         'Yellow': (0xf5, 0xe8, 0x79)
@@ -107,6 +107,9 @@ class Text_Helper():
         assert space_count == 1, f"Incorrect name input. Expecting 1 space, got {space_count}"
 
         first_name, last_name = name.split(" ")
+        #Jim check bc his name too long lol
+        if last_name[0:4] == "Papa":
+            last_name = "Papa"
         return first_name, last_name
     
     def get_max_text_size(self,ImageFont, text, bounding_box_size, font_path):
