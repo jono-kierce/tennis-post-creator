@@ -1,15 +1,16 @@
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 from helpers import Colours, Text_Helper
-
+colours = Colours()
 class Player:
-    def __init__(self, player_name, category_rank, number_of_stats, team_colour):
+    def __init__(self, player_name, category_rank, number_of_stats, team_colour, sub_caption=None):
         assert team_colour in ['Pink', 'Navy', 'Light Blue', 'Green', 'White', 'Black', 'Red', 'Orange', 'Yellow'], "Colours must be in the valid list"
         assert category_rank <= 5, "Only allow rank of 5 or less"
         self.player_name = player_name
         self.category_rank = category_rank
         self.number_of_stats = number_of_stats
         self.team_colour = team_colour
+        self.sub_caption = sub_caption
 
 
 def read_csv(path):
@@ -26,26 +27,39 @@ def read_csv(path):
 
     #Check csv in format specified
     expected_rows = 6
-    expected_cols = 4
-    assert df.shape == (expected_rows, expected_cols), f"CSV not in expected format of {expected_rows}x{expected_cols}\n. Expected {expected_rows} rows, got {df.shape[0]}\nExpected {expected_cols} cols, got {df.shape[1]}"
+    expected_cols = [4,5]
+    rows, cols = df.shape
+    assert rows == expected_rows, f"CSV not in expected format of {expected_rows}x{expected_cols}\n. Expected {expected_rows} rows, got {df.shape[0]}\nExpected {expected_cols} cols, got {df.shape[1]}"
+    assert cols in expected_cols, f"CSV not in expected format of {expected_rows}x{expected_cols}\n. Expected {expected_rows} rows, got {df.shape[0]}\nExpected {expected_cols} cols, got {df.shape[1]}"
+
     #The first row should contain stat title, img_path and then nothing else. Unpack that here:
     assert str(df[2][0]) == 'nan' and str(df[3][0]) == 'nan', f"Expected no values past column 2 of csv but got {df[2][0]},{df[3][0]}"
     stat_title = df[0][0]
     img_path = df[1][0]
 
     players = []
-    for i in range(1,expected_rows):
-        player_name = df[0][i]
-        player_rank = int(df[1][i])
-        num_stats = int(df[2][i])
-        team_col = df[3][i]
-        player = Player(player_name, player_rank, num_stats, team_col)
-        players.append(player)
+    if cols == expected_cols[0]:
+        for i in range(1,rows):
+            player_name = df[0][i]
+            player_rank = int(df[1][i])
+            num_stats = float(df[2][i])
+            team_col = df[3][i]
+            player = Player(player_name, player_rank, num_stats, team_col)
+            players.append(player)
+    elif cols == expected_cols[1]: #If extra column, it'll be the sub-caption
+        for i in range(1,rows):
+            player_name = df[0][i]
+            player_rank = int(df[1][i])
+            num_stats = int(df[2][i])
+            team_col = df[3][i]
+            sub_caption = str(df[4][i])
+            player = Player(player_name, player_rank, num_stats, team_col, sub_caption=sub_caption)
+            players.append(player)
 
     return stat_title, img_path, players 
 
 
-def draw_data_from_scratch(stat_title, img_path, players):
+def draw_data_from_scratch(stat_title, img_path, players, blue_box_caption="S3 Regular Season Leaders", output_path="img.png"):
     # Create a blank image with white background
     image_width = 1200
     image_height = 1200
@@ -65,7 +79,6 @@ def draw_data_from_scratch(stat_title, img_path, players):
     anton_path = "util/fonts/Anton/Anton-Regular.ttf"
     oswald_path = "util/fonts/Oswald/Oswald-VariableFont_wght.ttf"
     #Draw caption in blue box
-    blue_box_caption = "S3 Regular Season Leaders"
     max_blue_box_text_size = text_helper.get_max_text_size(ImageFont, blue_box_caption, (half_width - 50, blue_box_height), oswald_path)
     text_helper.draw_centered_text(blue_box_caption, ImageFont.truetype(oswald_path, size=max_blue_box_text_size), (half_width/2, blue_box_height/2), fill=colours.tnt_colours['White'])
 
@@ -75,7 +88,7 @@ def draw_data_from_scratch(stat_title, img_path, players):
 
     # Draw the statistic title at the top
     max_title_size = text_helper.get_max_text_size(ImageFont, stat_title, (half_width - 50, blue_box_height), anton_path)
-    text_helper.draw_centered_text(stat_title, ImageFont.truetype(anton_path, size=max_title_size),(half_width / 2, blue_box_height / 2 + blue_box_height), fill=colours.tnt_colours['Black'])
+    text_helper.draw_centered_text(stat_title, ImageFont.truetype(anton_path, size=max_title_size),(half_width / 2, blue_box_height / 2 + blue_box_height), fill=colours.tnt_colours['Blue'])
     # Load the image to be used for the players
     player_image = Image.open(img_path)
     player_image = player_image.resize((200, 200))  # Resize to fit the layout
@@ -100,7 +113,7 @@ def draw_data_from_scratch(stat_title, img_path, players):
         #Get team colours
         text_colour = colours.team_colour_codes_dark[player.team_colour]
         bg_colour = colours.adjust_color_brightness(colours.team_colour_codes_light[player.team_colour],0.9)
-        bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.6)
+        bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.8)
         #Draw circle on left edge
         draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = bg_colour)
         #Add rectangle from midpoint of circle to end of table
@@ -113,20 +126,28 @@ def draw_data_from_scratch(stat_title, img_path, players):
 
 
         #Write number (rank) in middle of circle
-        rank_middle = (table_padding + table_row_height * 0.5 - 5, table_heights[0] + (idx + 0.5) * table_row_height- 2)
+        rank_middle = (table_padding + table_row_height * 0.5 - 16, table_heights[0] + (idx + 0.5) * table_row_height- 2)
         # Use the draw_centered_text function to draw the rank number centered
         
-        text_helper.draw_centered_text(str(player.category_rank), title_font, rank_middle, fill=text_colour)
+        text_helper.draw_centered_text(str(player.category_rank), title_font, rank_middle, fill=colours.adjust_color_brightness(text_colour,0.83))
         
         #Write player name
         #Player name can basically fit within the bounds of xcoords: padding*2 -> table_widths[0] - stat_box_width
         first_name, last_name = text_helper.split_name(str(player.player_name))
         player_name_bounds = (table_padding*2,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
-        first_name_last_diff = 52
-        name_offset = 36
-        text_helper.draw_text(first_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
-        text_helper.draw_text(last_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+        if player.sub_caption:
+            caption_font = ImageFont.truetype(oswald_path, size=38)
 
+            first_name_last_diff = 52
+            name_offset = 65
+            text_helper.draw_text(first_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+            text_helper.draw_text(last_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+            text_helper.draw_text(player.sub_caption, caption_font, (player_name_bounds[0] + table_padding * 0.4, player_name_bounds[3] - name_offset + 2), fill=colours.tnt_colours['White'])
+        else:
+            first_name_last_diff = 52
+            name_offset = 45
+            text_helper.draw_text(first_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+            text_helper.draw_text(last_name, oswald_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
     # Save the final image
 
     #Add player image
@@ -140,12 +161,13 @@ def draw_data_from_scratch(stat_title, img_path, players):
     tnt_logo = Image.open("imgs/logo-white.png").resize((logo_size,int(logo_size / 1.35)))
     template.paste(tnt_logo, (image_width - logo_size + 35, 35), tnt_logo)
 
-    template.save("output_image.png")
+    template.save(output_path)
+
+def create_everything(csv_path, blue_box_caption="S3 Totals", output_path = "outputs/output_image.png"):
+    stat_title, img_path, players = read_csv(csv_path)
+    draw_data_from_scratch(stat_title.upper(), img_path, players, blue_box_caption = blue_box_caption, output_path=output_path)
 
 if __name__ == "__main__":
-    colours = Colours()
-    stat_title, img_path, players = read_csv("csv.csv")
-    draw_data_from_scratch(stat_title.upper(), img_path, players)
-
+    create_everything("csv.csv")
 
     
