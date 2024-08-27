@@ -98,12 +98,12 @@ def draw_data_from_scratch(stat_title, img_path, players):
     for idx, player in enumerate(players):
         #Get team colours
         text_colour = colours.team_colour_codes_dark[player.team_colour]
-        bg_colour = colours.team_colour_codes_light[player.team_colour]
+        bg_colour = colours.adjust_color_brightness(colours.team_colour_codes_light[player.team_colour],0.9)
         bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.8)
         #Draw circle on left edge
-        draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = text_colour)
+        draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = bg_colour)
         #Add rectangle from midpoint of circle to end of table
-        draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=text_colour)
+        draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour)
         #Draw darkened column on right side of table - for stats to go in
         #draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
         

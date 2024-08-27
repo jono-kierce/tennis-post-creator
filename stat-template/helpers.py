@@ -96,9 +96,45 @@ class Text_Helper():
         # Draw the text at the calculated position
         self.draw.text((text_x, text_y), text, font=font, fill=fill)
 
+    def draw_text(self, text, font, position, fill=(0, 0, 0)):
+        text_x, text_y = position
+        # Draw the text at the position
+        self.draw.text((text_x, text_y), text, font=font, fill=fill)
+
+        
     def split_name(self, name):
         space_count = name.count(" ")
         assert space_count == 1, f"Incorrect name input. Expecting 1 space, got {space_count}"
 
         first_name, last_name = name.split(" ")
         return first_name, last_name
+    
+    def get_max_text_size(self,ImageFont, text, bounding_box_size, font_path):
+        """
+                Get's the maximum size of text which can fit in the bounding box
+        
+        Parameters:
+            text: The string of text to be calculated on
+            bounding_box: A tuple (width, height) that denotes the size of the box to be entered into
+        """
+        max_size = 0
+        bounding_box_width, bounding_box_height = bounding_box_size
+        
+        # Start with a reasonable initial font size
+        size = 1
+        while True:
+            # Calculate the bounding box of the text with the current font size
+            font = ImageFont.truetype(font_path, size=size)
+            _, _, text_width, text_height = self.draw.textbbox((0, 0), text, font=font)
+            
+            # Check if the text fits within the bounding box
+            if text_width > bounding_box_width or text_height > bounding_box_height:
+                break
+            
+            # Update the maximum font size
+            max_size = size
+            
+            # Increment the font size
+            size += 1
+        
+        return max_size
