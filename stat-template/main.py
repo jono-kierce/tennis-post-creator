@@ -57,17 +57,24 @@ def draw_data_from_scratch(stat_title, img_path, players):
     half_width = image_width // 2
     green_color = colours.tnt_colours['Green']
     draw.rectangle([0, 0, half_width, image_height], fill=green_color)
-    blue_box_height = image_height //8
+    blue_box_height = image_height // 8
+
     draw.rectangle([0, 0, half_width, blue_box_height], fill=colours.tnt_colours['Blue'])
     # Set fonts
-    font_path = "util/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf"  # Adjust this path
+    font_path = "util/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf"
+    anton_path = "util/fonts/Anton/Anton-Regular.ttf"
+    
+    #Draw caption in blue box
+    blue_box_caption = "S3 Regular Season Leaders"
+    max_blue_box_text_size = text_helper.get_max_text_size(ImageFont, blue_box_caption, (half_width - 50, blue_box_height), font_path)
+    text_helper.draw_centered_text(blue_box_caption, ImageFont.truetype(font_path, size=max_blue_box_text_size), (half_width/2, blue_box_height/2), fill=colours.tnt_colours['White'])
+
     title_font = ImageFont.truetype(font_path, size=110)
     text_font = ImageFont.truetype(font_path, size=45)
 
     # Draw the statistic title at the top
-
-    _, _, w, h = draw.textbbox((0, 0), stat_title, font=title_font)
-    text_helper.draw_centered_text(stat_title, title_font,(half_width / 2, blue_box_height / 2 + blue_box_height), fill=colours.tnt_colours['Black'])
+    max_title_size = text_helper.get_max_text_size(ImageFont, stat_title, (half_width - 50, blue_box_height), anton_path)
+    text_helper.draw_centered_text(stat_title, ImageFont.truetype(anton_path, size=max_title_size),(half_width / 2, blue_box_height / 2 + blue_box_height), fill=colours.tnt_colours['Black'])
     # Load the image to be used for the players
     player_image = Image.open(img_path)
     player_image = player_image.resize((200, 200))  # Resize to fit the layout
@@ -94,14 +101,14 @@ def draw_data_from_scratch(stat_title, img_path, players):
         bg_colour = colours.team_colour_codes_light[player.team_colour]
         bg_colour_dark = colours.adjust_color_brightness(bg_colour, 0.8)
         #Draw circle on left edge
-        draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = bg_colour)
+        draw.ellipse((table_padding, table_heights[0] + idx*table_row_height, table_padding + table_row_height, (idx+1)*table_row_height+table_heights[0]), fill = text_colour)
         #Add rectangle from midpoint of circle to end of table
-        draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour)
+        draw.rectangle((table_widths[0] + table_padding, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=text_colour)
         #Draw darkened column on right side of table - for stats to go in
-        draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
+        #draw.rectangle((table_widths[1]-stat_box_width, table_heights[0] + idx*table_row_height,table_widths[1],(idx+1)*table_row_height+table_heights[0]), fill=bg_colour_dark)
         
         #Draw stat count in darkened rectangle
-        text_helper.draw_centered_text(str(player.number_of_stats), title_font, (half_width - table_padding - stat_box_width // 2,table_heights[0] + (idx+0.5)*table_row_height), fill=text_colour)
+        text_helper.draw_centered_text(str(player.number_of_stats), title_font, (half_width - table_padding - stat_box_width // 2,table_heights[0] + (idx+0.5)*table_row_height), fill='White')
 
 
         #Write number (rank) in middle of circle
@@ -113,10 +120,12 @@ def draw_data_from_scratch(stat_title, img_path, players):
         #Write player name
         #Player name can basically fit within the bounds of xcoords: padding*2 -> table_widths[0] - stat_box_width
         first_name, last_name = text_helper.split_name(str(player.player_name))
-        player_name_bounds = (table_padding*2+10,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
-        first_name_last_diff = 50
-        text_helper.draw_left_text(first_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2), fill=colours.tnt_colours['White'])
-        text_helper.draw_left_text(last_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2), fill=colours.tnt_colours['White'])
+        player_name_bounds = (table_padding*2,table_heights[0] + idx*table_row_height ,table_widths[1] - stat_box_width-10, (idx+1)*table_row_height+table_heights[0])
+        first_name_last_diff = 47
+        name_offset = 27
+        print(player_name_bounds)
+        text_helper.draw_text(first_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 - first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
+        text_helper.draw_text(last_name, text_font, (player_name_bounds[0] + table_padding * 0.4,player_name_bounds[1] + (player_name_bounds[3]-player_name_bounds[1])//2 + first_name_last_diff/2 - name_offset), fill=colours.tnt_colours['White'])
 
     # Save the final image
     template.save("output_image.png")
@@ -124,7 +133,7 @@ def draw_data_from_scratch(stat_title, img_path, players):
 if __name__ == "__main__":
     colours = Colours()
     stat_title, img_path, players = read_csv("csv.csv")
-    draw_data_from_scratch(stat_title, img_path, players)
+    draw_data_from_scratch(stat_title.upper(), img_path, players)
 
 
     
